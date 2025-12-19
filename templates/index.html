@@ -1,0 +1,104 @@
+
+<!DOCTYPE html>
+<html>
+<head>
+<title>Market Sentinel Pro</title>
+<meta http-equiv="refresh" content="90">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/normalize/8.0.1/normalize.min.css">
+<style>
+body{font-family:Inter,Segoe UI,Arial;background:#071018;color:#e6eef6;margin:0;}
+.header{padding:14px;background:#06121a;border-bottom:1px solid #0f2430;display:flex;justify-content:space-between;align-items:center}
+.container{display:grid;grid-template-columns:320px 1fr;gap:16px;padding:16px}
+.card{background:#081623;border:1px solid #0f2b3a;padding:12px;border-radius:6px}
+.h3{color:#00c4ff;margin:0 0 8px 0;font-size:15px}
+.list-row{display:flex;justify-content:space-between;padding:8px 0;border-bottom:1px solid #0b2e3a;font-size:13px}
+.small{font-size:12px;color:#9fb0bf}
+.badge{display:inline-block;padding:4px 8px;background:#0f2833;border-radius:4px;color:#bfefff;font-size:12px}
+.spark{font-size:11px;color:#9fb0bf;margin-top:4px}
+.alert{background:#0a1a20;border-left:4px solid #ff8a65;padding:8px;margin-bottom:8px}
+.topbar{display:flex;gap:8px;align-items:center}
+input.search{background:#071621;border:1px solid #12323f;color:#e6eef6;padding:6px;border-radius:4px;width:220px}
+.symbol-link{color:#bfefff;text-decoration:none}
+</style>
+</head>
+<body>
+<div class="header">
+  <div><strong>Market Sentinel Pro</strong> <span class="badge">Pro UI</span></div>
+  <div class="topbar">
+    <form action="/add_watch" method="post" style="display:inline;">
+      <input name="symbol" class="search" placeholder="Add symbol e.g. TCS.NS">
+      <button class="badge" type="submit">Add</button>
+    </form>
+    <a href="/logout" class="badge">Logout</a>
+  </div>
+</div>
+
+<div class="container">
+  <div>
+    <div class="card">
+      <h3 class="h3">Watchlist</h3>
+      {% for w in watchlist %}
+        <div class="list-row"><div>{{ w.name }}</div><div class="{{ 'green' if w.change>0 else 'red' }}">{{ w.change }}%</div></div>
+      {% endfor %}
+    </div>
+
+    <div class="card" style="margin-top:12px">
+      <h3 class="h3">Search (quick)</h3>
+      <input id="searchbox" placeholder="Type and press Enter" class="search">
+      <div id="searchresults" style="margin-top:8px"></div>
+    </div>
+  </div>
+
+  <div>
+    <div class="card">
+      <h3 class="h3">Top Gainers</h3>
+      {% for g in gainers %}
+      <div class="list-row"><div><a href="#" class="symbol-link" data-symbol="{{ g.symbol }}">{{ g.name }}</a></div><div class="green">{{ g.change }}%</div></div>
+      <div class="spark">{{ g.spark }}</div>
+      {% endfor %}
+    </div>
+
+    <div class="card" style="margin-top:12px">
+      <h3 class="h3">Live Alerts</h3>
+      <div id="alerts">
+        {% for a in alerts %}
+        <div class="alert"><b>{{ a.symbol }}</b> {{ a.change }}% — {{ a.headline }} <div class="small">{{ a.time }}</div></div>
+        {% endfor %}
+      </div>
+    </div>
+  </div>
+</div>
+
+<script src="https://cdn.socket.io/4.7.2/socket.io.min.js"></script>
+<script>
+const socket = io();
+socket.on('initial_alerts', data => {
+  const el = document.getElementById('alerts');
+  data.forEach(a => {
+    const div = document.createElement('div'); div.className='alert'; div.innerHTML=`<b>${a.symbol}</b> ${a.change}% — ${a.headline} <div class="small">${a.time}</div>`;
+    el.prepend(div);
+  });
+});
+
+document.getElementById('searchbox').addEventListener('keydown', async e=>{
+  if(e.key==='Enter'){
+    const q=e.target.value;
+    const res = await fetch('/search_stock?q='+encodeURIComponent(q));
+    const data=await res.json();
+    const out = document.getElementById('searchresults');
+    out.innerHTML='';
+    data.slice(0,10).forEach(d=>{ out.innerHTML += `<div>${d.symbol}</div>`; });
+  }
+});
+
+document.querySelectorAll('.symbol-link').forEach(el=>el.addEventListener('click', async e=>{
+  e.preventDefault();
+  const sym = e.target.dataset.symbol;
+  const res = await fetch('/chart/'+sym);
+  const data = await res.json();
+  const w = window.open('', '_blank');
+  w.document.write('<pre>'+JSON.stringify(data, null, 2)+'</pre>');
+}));
+</script>
+</body>
+</html>

@@ -1,0 +1,12 @@
+flask
+flask_sqlalchemy
+flask_login
+flask_socketio
+eventlet
+yfinance
+feedparser
+textblob
+pandas
+numpy
+scikit-learn
+joblib
