@@ -15,6 +15,7 @@ app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 
 db = SQLAlchemy(app)
 login = LoginManager(app)
+login.login_view = "login"
 socketio = SocketIO(app, cors_allowed_origins='*', async_mode='eventlet')
 
 # ========== MODELS ==========
